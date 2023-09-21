@@ -1,0 +1,28 @@
+{
+  "name": "realworld-htmx",
+  "type": "module",
+  "scripts": {
+    "start": "bun --watch src/index.ts"
+  },
+  "devDependencies": {
+    "@faker-js/faker": "^8.0.2",
+    "@types/dompurify": "^3.0.2",
+    "@types/jsonwebtoken": "^9.0.3",
+    "bun-types": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "andale": "^0.0.8",
+    "date-fns": "^2.30.0",
+    "dompurify": "^3.0.5",
+    "drizzle-orm": "^0.28.6",
+    "fp-ts": "^2.16.1",
+    "htmx-tsx": "^0.0.15",
+    "marked": "^9.0.3",
+    "typescript": "^5.2.2",
+    "ulid": "^2.3.0",
+    "zod": "^3.22.2"
+  }
+}

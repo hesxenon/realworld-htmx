@@ -26,6 +26,9 @@ import {
 } from "./Pages";
 import { Feed } from "./Components";
 import { eitherFromZodResult, formatZodError, tap } from "./Utils";
+import { Url, url } from "./Routes";
+
+//#region UTILS
 
 const {
   Validate: { query, body },
@@ -60,10 +63,30 @@ const notFound = ({ children = "not found" }: JSX.Element = {}) =>
     },
   });
 
+const redirect = (
+  location: Url,
+  {
+    hx = true,
+    status = hx ? 200 : 302,
+  }: { hx?: boolean; status?: number } = {},
+) =>
+  new Response(undefined, {
+    status,
+    headers: hx
+      ? {
+          "hx-redirect": url(location),
+        }
+      : {
+          Location: url(location),
+        },
+  });
+
 const pagination = z.object({
   page: z.coerce.number().optional().default(0),
   size: z.coerce.number().optional().default(20),
 });
+
+//#endregion
 
 export const getPublicAsset = pipe(
   context(),
@@ -204,7 +227,7 @@ export const login = flow(
   createRootContext(),
   body(z.object({ username: z.string(), password: z.string() })),
   withCookies(),
-  handle(({ withDb, body, setCookie }) => {
+  handle(({ withDb, body, setCookie }): Response => {
     const user = withDb(Db.getUserByCredentials(body));
     if (user == null) {
       return new Response(
@@ -220,27 +243,16 @@ export const login = flow(
     }
     const jwt = sign({ id: user.id }, {});
 
-    return pipe(
-      new Response(undefined, {
-        headers: {
-          "hx-redirect": "/",
-        },
-      }),
-      setCookie("jwt", jwt, { httpOnly: true }),
-    );
+    return pipe(redirect(["GET /"]), setCookie("jwt", jwt, { httpOnly: true }));
   }),
 );
 
 export const logout = pipe(
   context(),
   withCookies(),
-  handle(({ setCookie }) => {
+  handle(({ setCookie }): Response => {
     return pipe(
-      new Response(undefined, {
-        headers: {
-          "hx-redirect": "/",
-        },
-      }),
+      redirect(["GET /"]),
       setCookie("jwt", "", {
         httpOnly: true,
         maxAge: 0,
@@ -269,7 +281,7 @@ export const register = flow(
       email: z.string(),
     }),
   ),
-  handle(({ withDb, body, bodySchema }) => {
+  handle(({ withDb, body, bodySchema }): Response => {
     return pipe(
       bodySchema
         .extend({
@@ -281,12 +293,7 @@ export const register = flow(
       either.flatMap(flow(Db.addUser, withDb, either.mapLeft(array.of))),
       either.match(
         (errors) => jsx(<Register values={body} errors={errors} />),
-        () =>
-          new Response(undefined, {
-            headers: {
-              "hx-redirect": "/login",
-            },
-          }),
+        () => redirect(["GET /login"]),
       ),
     );
   }),
@@ -423,53 +430,56 @@ export const upsertArticle = flow(
       })
       .partial(),
   ),
-  handle(({ body, withDb, user }) =>
-    pipe(
-      z
-        .union([
-          z.object({
-            id: z.string({
-              required_error: "id is required",
+  handle(
+    ({ body, withDb, user }): Response =>
+      pipe(
+        z
+          .union([
+            z.object({
+              id: z.string({
+                required_error: "id is required",
+              }),
             }),
-          }),
-          z.object({
-            body: z.string().min(1, "body cannot be empty"),
-            description: z.string().min(1, "description cannot be empty"),
-            title: z.string().min(1, "title cannot be empty"),
-            tags: z.array(z.object({ name: z.string() })),
-          }),
-        ])
-        .safeParse(body),
-      eitherFromZodResult,
-      either.mapLeft((error) => {
-        const { unionErrors } =
-          error.errors.find(
-            (error): error is Extract<z.ZodIssue, { code: "invalid_union" }> =>
-              error.code === "invalid_union",
-          ) ?? {};
-        if (unionErrors == null) {
-          return error;
-        }
-        return "id" in body ? unionErrors.at(0)! : unionErrors.at(1)!;
-      }),
-      either.mapLeft(formatZodError),
-      either.map((data) => ("id" in data ? { ...body, ...data } : data)),
-      either.match(
-        (errors) => jsx(<Editor values={body} errors={errors} />),
-        (parsed) => {
-          const upserted = withDb(
-            Db.upsertArticle({
-              article: parsed,
-              author: user,
-              tags: parsed.tags ?? [],
+            z.object({
+              title: z.string().min(1, "title cannot be empty"),
+              description: z.string().min(1, "description cannot be empty"),
+              body: z.string().min(1, "body cannot be empty"),
+              tags: z.array(z.object({ name: z.string() })),
             }),
-          );
-          if (upserted == null) {
-            return notFound({ children: `could not find article` });
+          ])
+          .safeParse(body),
+        eitherFromZodResult,
+        either.mapLeft((error) => {
+          const { unionErrors } =
+            error.errors.find(
+              (
+                error,
+              ): error is Extract<z.ZodIssue, { code: "invalid_union" }> =>
+                error.code === "invalid_union",
+            ) ?? {};
+          if (unionErrors == null) {
+            return error;
           }
-          return jsx(<Editor values={upserted} />);
-        },
+          return "id" in body ? unionErrors.at(0)! : unionErrors.at(1)!;
+        }),
+        either.mapLeft(formatZodError),
+        either.map((data) => ("id" in data ? { ...body, ...data } : data)),
+        either.match(
+          (errors) => jsx(<Editor values={body} errors={errors} />),
+          (parsed) => {
+            const upserted = withDb(
+              Db.upsertArticle({
+                article: parsed,
+                author: user,
+                tags: parsed.tags ?? [],
+              }),
+            );
+            if (upserted == null) {
+              return notFound({ children: `could not find article` });
+            }
+            return redirect(["GET /article", { id: upserted.id }]);
+          },
+        ),
       ),
-    ),
   ),
 );

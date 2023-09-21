@@ -63,6 +63,9 @@ export function ArticleDetail({
       {currentUser?.id !== article.author.id ? undefined : (
         <>
           <button
+            hx-get={url(["GET /article/editor", { id: article.id }])}
+            hx-target="closest .article-page"
+            hx-swap="outerHTML"
             class="btn btn-sm btn-outline-secondary"
             style={{
               marginRight: "3px",
@@ -219,6 +222,8 @@ export function Profile({
               {profile.id !== currentUser?.id ? undefined : (
                 <button
                   hx-get={url(["GET /profile/settings"])}
+                  hx-target="closest .profile-page"
+                  hx-swap="outerHTML"
                   class="btn btn-sm btn-outline-secondary action-btn"
                 >
                   <i class="ion-gear-a"></i>

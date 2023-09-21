@@ -1,3 +1,9 @@
+/**
+ * just a fill-in implementation until bun supports `jsonwebtoken`
+ *
+ * As the name implies, this should _NOT_ be used in production
+ */
+
 import * as Crypto from "node:crypto";
 import * as Either from "fp-ts/Either";
 import { pipe } from "fp-ts/lib/function";
@@ -18,17 +24,17 @@ export const sign = (secret: string) => (payload: any, headers: Headers) => {
   const stringifiedPayload = JSON.stringify(payload);
   const signature = createSignature(
     secret,
-    stringifiedHeaders + stringifiedPayload
+    stringifiedHeaders + stringifiedPayload,
   );
   return `${toBase64(stringifiedHeaders)}.${toBase64(
-    stringifiedPayload
+    stringifiedPayload,
   )}.${signature}`;
 };
 
 export const verify =
   (secret: string) =>
   (
-    encoded: string
+    encoded: string,
   ): Either.Either<string, { headers: Headers; payload: any }> => {
     const [stringifiedHeaders, stringifiedPayload, signature] =
       encoded.split(".");
@@ -36,13 +42,13 @@ export const verify =
     const tryDecode = (encoded: string) =>
       Either.tryCatch(
         () => fromBase64(encoded),
-        () => "could not decode"
+        () => "could not decode",
       );
 
     const tryParse = (stringified: string) =>
       Either.tryCatch(
         () => JSON.parse(stringified),
-        () => `could not parse '${stringified}'`
+        () => `could not parse '${stringified}'`,
       );
 
     return pipe(
@@ -52,30 +58,30 @@ export const verify =
         pipe(
           stringifiedHeaders,
           Either.fromNullable("headers are null"),
-          Either.chain(tryDecode)
-        )
+          Either.chain(tryDecode),
+        ),
       ),
       Either.apS(
         "payload",
         pipe(
           stringifiedPayload,
           Either.fromNullable("payload is null"),
-          Either.chain(tryDecode)
-        )
+          Either.chain(tryDecode),
+        ),
       ),
       Either.chain(
         Either.fromPredicate(
           ({ headers, payload }) =>
             createSignature(secret, headers + payload) === signature,
-          () => `signature does not match`
-        )
+          () => `signature does not match`,
+        ),
       ),
       Either.chain(({ headers, payload }) =>
         pipe(
           Either.Do,
           Either.apS("headers", tryParse(headers)),
-          Either.apS("payload", tryParse(payload))
-        )
-      )
+          Either.apS("payload", tryParse(payload)),
+        ),
+      ),
     );
   };

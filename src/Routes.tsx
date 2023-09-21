@@ -1,3 +1,7 @@
+/**
+ * only the "mountpoints" - i.e. which logic should be available under which url
+ */
+
 import { A } from "andale";
 import {
   favoriteArticle,

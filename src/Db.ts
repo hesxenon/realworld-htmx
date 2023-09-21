@@ -1,3 +1,7 @@
+/**
+ * Persistence operations
+ */
+
 import Database from "bun:sqlite";
 import {
   SQL,

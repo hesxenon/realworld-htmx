@@ -1,3 +1,7 @@
+/**
+ * program entry point
+ */
+
 import { A } from "andale";
 import * as Fs from "node:fs";
 import * as Routes from "./Routes";

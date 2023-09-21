@@ -1,3 +1,7 @@
+/**
+ * set up common logic
+ */
+
 import { A } from "andale";
 import * as JWT from "./NaiveJWT";
 import { apply, flow, pipe } from "fp-ts/lib/function";

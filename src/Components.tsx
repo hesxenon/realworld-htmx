@@ -1,3 +1,7 @@
+/**
+ * standalone components that can be used from wherever
+ */
+
 import * as DateFns from "date-fns/fp";
 import { ArticlePreview, Comment, User } from "./Db";
 import { Url, url } from "./Routes";

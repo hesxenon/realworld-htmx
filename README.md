@@ -27,3 +27,7 @@ bun start
 ```
 
 This project was created using `bun init` in bun v1.0.0. [Bun](https://bun.sh) is a fast all-in-one JavaScript runtime.
+
+# Further notes
+
+Codebase only allows github repos, I'm primarily using gitlab however. I'll do my best to sync changes but the github repo might be out of date.

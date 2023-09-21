@@ -1,3 +1,8 @@
+/**
+ * the "business logic" if you will. Here we pull data from the database,
+ * set preconditions on incoming requests and choose _what_ to render
+ */
+
 import { flow, pipe } from "fp-ts/lib/function";
 import {
   createRootContext,
@@ -9,7 +14,7 @@ import { A } from "andale";
 import { toHtml } from "htmx-tsx";
 import { z } from "zod";
 import * as Db from "./Db";
-import { either } from "fp-ts";
+import { array, either } from "fp-ts";
 import {
   ArticleDetail,
   Editor,
@@ -20,12 +25,11 @@ import {
   Settings,
 } from "./Pages";
 import { Feed } from "./Components";
-import { eitherFromZodResult, tap } from "./Utils";
+import { eitherFromZodResult, formatZodError, tap } from "./Utils";
 
 const {
   Validate: { query, body },
-  Middleware: { bodyParser },
-  Context: { withCookies },
+  Context: { withCookies, withCaching },
   context,
   handle,
 } = A.HTTP;
@@ -62,8 +66,8 @@ const pagination = z.object({
 });
 
 export const getPublicAsset = pipe(
-  A.HTTP.context(),
-  A.HTTP.Context.withCaching(),
+  context(),
+  withCaching(),
   handle(({ request, cache }) => {
     const url = new URL(request.url);
     const file = Bun.file(url.pathname.slice(1));
@@ -247,8 +251,12 @@ export const logout = pipe(
 
 export const getRegister = flow(
   createRootContext(),
-  handle(() => {
-    return jsx(<Register />);
+  handle(({ Shell }) => {
+    return jsx(
+      <Shell>
+        <Register />
+      </Shell>,
+    );
   }),
 );
 
@@ -258,26 +266,25 @@ export const register = flow(
     z.object({
       username: z.string(),
       password: z.string(),
-      email: z.string().email(),
+      email: z.string(),
     }),
   ),
-  handle(({ withDb, body }) => {
-    const createNewUserResult = withDb(Db.addUser(body));
+  handle(({ withDb, body, bodySchema }) => {
     return pipe(
-      createNewUserResult,
+      bodySchema
+        .extend({
+          email: z.string().email(),
+        })
+        .safeParse(body),
+      eitherFromZodResult,
+      either.mapLeft(formatZodError),
+      either.flatMap(flow(Db.addUser, withDb, either.mapLeft(array.of))),
       either.match(
-        (error) =>
-          new Response(
-            toHtml(
-              <ul>
-                <li>{error}</li>
-              </ul>,
-            ),
-          ),
+        (errors) => jsx(<Register values={body} errors={errors} />),
         () =>
           new Response(undefined, {
             headers: {
-              "hx-location": "/login",
+              "hx-redirect": "/login",
             },
           }),
       ),
@@ -290,7 +297,7 @@ export const getSettings = flow(
   handle(({ user, Shell }) => {
     return jsx(
       <Shell>
-        <Settings user={user} />
+        <Settings values={user} />
       </Shell>,
     );
   }),
@@ -308,28 +315,27 @@ export const updateSettings = flow(
       avatar: z.string(),
     }),
   ),
-  handle(({ withDb, body, query, user }) => {
-    const validationResult = z
-      .object({
-        username: z.string().min(1, "username is required"),
-        password: z.string().min(1, "password is required"),
-        email: z.string().email(),
-        bio: z.string(),
-        avatar: z.string().url(),
-      })
-      .safeParse(body);
-
-    if (validationResult.success) {
-      withDb(Db.updateUser({ id: query.id, ...body }));
-    }
-
-    return jsx(
-      <Settings
-        user={{ id: user.id, ...body }}
-        validationError={
-          validationResult.success ? undefined : validationResult.error
-        }
-      />,
+  handle(({ withDb, body, bodySchema, user }) => {
+    return pipe(
+      bodySchema
+        .extend({
+          username: z.string().min(1, "username is required"),
+          password: z.string().min(1, "password is required"),
+          email: z.string().email(),
+          avatar: z.string().url(),
+        })
+        .safeParse(body),
+      eitherFromZodResult,
+      either.mapLeft(formatZodError),
+      either.match(
+        (errors) =>
+          jsx(<Settings values={{ id: user.id, ...body }} errors={errors} />),
+        (parsed) => {
+          const updated = { id: user.id, ...parsed };
+          withDb(Db.updateUser(updated));
+          return jsx(<Settings values={updated} />);
+        },
+      ),
     );
   }),
 );
@@ -390,7 +396,7 @@ export const getEditor = flow(
     }
     return jsx(
       <Shell>
-        <Editor article={article} />
+        <Editor values={article} />
       </Shell>,
     );
   }),
@@ -444,11 +450,12 @@ export const upsertArticle = flow(
         if (unionErrors == null) {
           return error;
         }
-        return "id" in body ? unionErrors.at(0) : unionErrors.at(1);
+        return "id" in body ? unionErrors.at(0)! : unionErrors.at(1)!;
       }),
+      either.mapLeft(formatZodError),
       either.map((data) => ("id" in data ? { ...body, ...data } : data)),
       either.match(
-        (error) => jsx(<Editor article={body} validationError={error} />),
+        (errors) => jsx(<Editor values={body} errors={errors} />),
         (parsed) => {
           const upserted = withDb(
             Db.upsertArticle({
@@ -460,7 +467,7 @@ export const upsertArticle = flow(
           if (upserted == null) {
             return notFound({ children: `could not find article` });
           }
-          return jsx(<Editor article={upserted} />);
+          return jsx(<Editor values={upserted} />);
         },
       ),
     ),

@@ -4,6 +4,21 @@ import { Url, url } from "./Routes";
 
 const formatDate = DateFns.format("MMMM do");
 
+export function FormErrors({
+  errors,
+}: {
+  errors: string[];
+}) {
+  return (
+    <ul class="error-messages">
+      {errors
+        .map((error) => (
+          <li>{error}</li>
+        ))}
+    </ul>
+  );
+}
+
 export function Avatar({ user }: { user: User }) {
   return (
     <Link url={["GET /profile", { id: user.id }]}>

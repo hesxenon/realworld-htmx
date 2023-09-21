@@ -1,14 +1,17 @@
 /**
- * All Components that the user can directly navigate to
+ * All "Components" that the user can directly navigate to
  */
 
 import * as DateFns from "date-fns/fp";
 import * as Db from "./Db";
-import { Avatar, Comment, Link } from "./Components";
+import { Comment, FormErrors, Link } from "./Components";
 import { url } from "./Routes";
-import { ZodError } from "zod";
 import { marked } from "marked";
 import { fromHtml } from "htmx-tsx";
+
+type Form<T> = (T extends undefined ? { values?: T } : { values: T }) & {
+  errors?: string[] | undefined;
+};
 
 export function ArticleDetail({
   article,
@@ -369,7 +372,10 @@ export function Home({
   );
 }
 
-export function Login() {
+export function Login({
+  values,
+  errors,
+}: Form<{ username: string; password: string } | undefined>) {
   return (
     <div class="auth-page">
       <div class="container page">
@@ -380,13 +386,20 @@ export function Login() {
               <Link url={["GET /register"]}>Need an account?</Link>
             </p>
 
-            <form hx-post={url(["POST /login"])} hx-swap="beforebegin">
+            {errors == null ? undefined : <FormErrors errors={errors} />}
+
+            <form
+              hx-post={url(["POST /login"])}
+              hx-target="closest .auth-page"
+              hx-swap="outerHTML"
+            >
               <fieldset class="form-group">
                 <input
                   name="username"
                   class="form-control form-control-lg"
                   type="text"
-                  placeholder="Email"
+                  value={values?.username}
+                  placeholder="Username"
                 />
               </fieldset>
               <fieldset class="form-group">
@@ -394,6 +407,7 @@ export function Login() {
                   name="password"
                   class="form-control form-control-lg"
                   type="password"
+                  value={values?.username}
                   placeholder="Password"
                 />
               </fieldset>
@@ -411,7 +425,10 @@ export function Login() {
   );
 }
 
-export function Register() {
+export function Register({
+  values,
+  errors,
+}: Form<{ username: string; email: string; password: string } | undefined>) {
   return (
     <div class="auth-page">
       <div class="container page">
@@ -422,16 +439,20 @@ export function Register() {
               <Link url={["GET /login"]}>Have an account?</Link>
             </p>
 
+            {errors == null ? undefined : <FormErrors errors={errors} />}
+
             <form
               hx-post={url(["POST /register"])}
-              hx-target="this"
-              hx-swap="beforebegin"
+              hx-target="closest .auth-page"
+              hx-swap="outerHTML"
             >
               <fieldset class="form-group">
                 <input
                   name="username"
                   class="form-control form-control-lg"
                   type="text"
+                  required
+                  value={values?.username}
                   placeholder="Username"
                 />
               </fieldset>
@@ -439,7 +460,9 @@ export function Register() {
                 <input
                   name="email"
                   class="form-control form-control-lg"
-                  type="text"
+                  type="email"
+                  required
+                  value={values?.email}
                   placeholder="Email"
                 />
               </fieldset>
@@ -448,6 +471,8 @@ export function Register() {
                   name="password"
                   class="form-control form-control-lg"
                   type="password"
+                  required
+                  value={values?.password}
                   placeholder="Password"
                 />
               </fieldset>
@@ -465,13 +490,7 @@ export function Register() {
   );
 }
 
-export function Settings({
-  validationError,
-  user,
-}: {
-  validationError?: ZodError<Db.User>;
-  user: Db.User;
-}) {
+export function Settings({ values: user, errors }: Form<Db.User>) {
   return (
     <div class="settings-page">
       <div class="container page">
@@ -479,13 +498,7 @@ export function Settings({
           <div class="col-md-6 offset-md-3 col-xs-12">
             <h1 class="text-xs-center">Your Settings</h1>
 
-            {validationError == null ? undefined : (
-              <ul class="error-messages">
-                {validationError.flatten().formErrors.map((error) => (
-                  <li>{error}</li>
-                ))}
-              </ul>
-            )}
+            {errors == null ? undefined : <FormErrors errors={errors} />}
 
             <form
               hx-put={url(["PUT /profile/settings", { id: user.id }])}
@@ -563,12 +576,9 @@ export function Settings({
 }
 
 export function Editor({
-  article,
-  validationError,
-}: {
-  article: Partial<Db.Article & { tags: Db.Tag[] }> | undefined;
-  validationError?: ZodError<Db.Article>;
-}) {
+  values: article,
+  errors,
+}: Form<Partial<Db.Article & { tags: Db.Tag[] }> | undefined>) {
   function TagPill({ tag }: { tag: Pick<Db.Tag, "name"> }) {
     return (
       <span class="tag-default tag-pill">
@@ -586,16 +596,7 @@ export function Editor({
       <div class="container page">
         <div class="row">
           <div class="col-md-10 offset-md-1 col-xs-12">
-            {validationError == null ? undefined : (
-              <ul class="error-messages">
-                {Object.values(validationError.format())
-                  .map((x) => (Array.isArray(x) ? x : x._errors))
-                  .flat()
-                  .map((error) => (
-                    <li>{error}</li>
-                  ))}
-              </ul>
-            )}
+            {errors == null ? undefined : <FormErrors errors={errors} />}
 
             <form
               hx-put={url(["PUT /article/editor"])}

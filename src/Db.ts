@@ -5,7 +5,6 @@ import {
   and,
   desc,
   eq,
-  getTableColumns,
   inArray,
   relations,
   sql,
@@ -16,7 +15,6 @@ import {
   ForeignKey,
   Index,
   PrimaryKey,
-  QueryBuilder,
   SQLiteColumn,
   SQLiteSyncDialect,
   SQLiteTableWithColumns,
@@ -28,7 +26,7 @@ import {
 } from "drizzle-orm/sqlite-core";
 import { notNullish } from "./Utils";
 import { flow, pipe } from "fp-ts/lib/function";
-import { array, either, option, reader, string } from "fp-ts";
+import { array, either, reader, string } from "fp-ts";
 import { ulid } from "ulid";
 
 const users = sqliteTable("users", {

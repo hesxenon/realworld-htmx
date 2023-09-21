@@ -3,9 +3,9 @@ import {
   favoriteArticle,
   followProfile,
   getArticle,
-  getGlobalFeedPage,
+  getGlobalFeed,
   getHome,
-  getPersonalFeedPage,
+  getPersonalFeed,
   getProfile,
   getRegister,
   getLogin,
@@ -30,10 +30,10 @@ export const create = (db: Db) =>
     },
     feed: {
       global: {
-        get: getGlobalFeedPage(db),
+        get: getGlobalFeed(db),
       },
       personal: {
-        get: getPersonalFeedPage(db),
+        get: getPersonalFeed(db),
       },
     },
     login: {

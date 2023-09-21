@@ -104,16 +104,23 @@ export const getPublicAsset = pipe(
 export const getArticle = flow(
   createRootContext(),
   query(z.object({ id: z.string() })),
-  handle(({ query, withDb, user, Shell }) => {
+  handle(({ query, withDb, user, Shell, cache }) => {
     const article = withDb(Db.getArticle(query));
     if (article == null) {
       return notFound();
     }
-    return jsx(
-      <Shell>
-        <ArticleDetail article={article} currentUser={user} />
-      </Shell>,
+    const cached = cache.etag(
+      jsx(
+        <Shell>
+          <ArticleDetail article={article} currentUser={user} />
+        </Shell>,
+      ),
+      (article.updatedAt ?? article.createdAt).slice(-5),
     );
+
+    cached.headers.set("Vary", "Hx-Request");
+
+    return cached;
   }),
 );
 
@@ -146,13 +153,15 @@ export const getProfile = flow(
   }),
 );
 
-export const getGlobalFeedPage = flow(
+export const getGlobalFeed = flow(
   createRootContext(),
   tryGetUser(),
   query(pagination.extend({ tag: z.string().optional() })),
-  handle(({ query, withDb }) => {
+  handle(({ query, withDb, cache }) => {
     const articles = withDb(Db.getArticlePreviews(query));
-    return jsx(
+    const latestArticle = articles.at(0);
+
+    const res = jsx(
       <Feed
         articles={articles}
         pagination={query}
@@ -162,15 +171,24 @@ export const getGlobalFeedPage = flow(
         ]}
       />,
     );
+
+    return latestArticle == null
+      ? res
+      : cache.etag(
+          res,
+          (latestArticle.updatedAt ?? latestArticle.createdAt).slice(-5),
+        );
   }),
 );
 
-export const getPersonalFeedPage = flow(
+export const getPersonalFeed = flow(
   createSecuredContext(),
   query(pagination),
-  handle(({ query, withDb, user }) => {
+  handle(({ query, withDb, user, cache }) => {
     const articles = withDb(Db.getArticlePreviews({ ...query, forUser: user }));
-    return jsx(
+    const latestArticle = articles.at(0);
+
+    const res = jsx(
       <Feed
         articles={articles}
         pagination={query}
@@ -180,19 +198,38 @@ export const getPersonalFeedPage = flow(
         ]}
       />,
     );
+
+    return latestArticle == null
+      ? res
+      : cache.etag(
+          res,
+          (latestArticle.updatedAt ?? latestArticle.createdAt).slice(-5),
+        );
   }),
 );
 
 export const getHome = flow(
   createRootContext(),
   tryGetUser(),
-  handle(({ withDb, Shell, user }) => {
+  handle(({ withDb, Shell, user, cache }) => {
     const popularTags = withDb(Db.getTags());
-    return jsx(
-      <Shell>
-        <Home user={user} popularTags={popularTags} />
-      </Shell>,
+
+    const tagsHash = Buffer.from(
+      popularTags.map(({ name }) => name).join(","),
+    ).toString("base64");
+
+    const res = cache.etag(
+      jsx(
+        <Shell>
+          <Home user={user} popularTags={popularTags} />
+        </Shell>,
+      ),
+      tagsHash,
     );
+
+    res.headers.append("Vary", "Cookie");
+
+    return res;
   }),
 );
 
@@ -363,15 +400,16 @@ export const updateSettings = flow(
 export const getOwnArticles = flow(
   createRootContext(),
   query(pagination.extend({ id: z.string() })),
-  handle(({ query, withDb }) => {
+  handle(({ query, withDb, cache }) => {
     const articles = withDb(
       Db.getArticlePreviews({
         ...query,
         fromAuthor: query,
       }),
     );
+    const latestArticle = articles.at(0);
 
-    return jsx(
+    const res = jsx(
       <Feed
         articles={articles}
         pagination={query}
@@ -381,18 +419,27 @@ export const getOwnArticles = flow(
         ]}
       />,
     );
+
+    return latestArticle == null
+      ? res
+      : cache.etag(
+          res,
+          (latestArticle.updatedAt ?? latestArticle.createdAt).slice(-5),
+        );
   }),
 );
 
 export const getFavoritedArticles = flow(
   createRootContext(),
   query(pagination.extend({ id: z.string() })),
-  handle(({ query, withDb }) => {
+  handle(({ query, withDb, cache }) => {
     const articles = withDb(
       Db.getArticlePreviews({ ...query, favoritedBy: query }),
     );
 
-    return jsx(
+    const latestArticle = articles.at(0);
+
+    const res = jsx(
       <Feed
         articles={articles}
         pagination={query}
@@ -402,6 +449,13 @@ export const getFavoritedArticles = flow(
         ]}
       />,
     );
+
+    return latestArticle == null
+      ? res
+      : cache.etag(
+          res,
+          (latestArticle.updatedAt ?? latestArticle.createdAt).slice(-5),
+        );
   }),
 );
 

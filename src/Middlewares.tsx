@@ -10,6 +10,11 @@ const createBaseContext = (db: Db) =>
   pipe(
     A.HTTP.context(),
     A.HTTP.Context.withCookies(),
+    A.HTTP.Context.withCaching({
+      defaultHeaders: {
+        Vary: "hx-request",
+      },
+    }),
     A.Context.add({
       withDb: apply(db),
     }),

@@ -14,7 +14,7 @@
     "typescript": "^5.0.0"
   },
   "dependencies": {
-    "andale": "^0.0.8",
+    "andale": "^0.0.9",
     "date-fns": "^2.30.0",
     "dompurify": "^3.0.5",
     "drizzle-orm": "^0.28.6",

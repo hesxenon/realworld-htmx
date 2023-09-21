@@ -77,8 +77,9 @@ export const createSecuredContext = ({
         return taskEither.left(
           redirectToLogin
             ? new Response(undefined, {
-                status: 302,
+                status: context.isHxRequest ? 200 : 302,
                 headers: {
+                  "hx-redirect": "/login",
                   location: "/login",
                 },
               })

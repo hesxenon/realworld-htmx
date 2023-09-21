@@ -19,6 +19,7 @@ import {
   getEditor,
   upsertArticle,
   logout,
+  deleteArticle,
 } from "./Handlers";
 import { Db } from "./Db";
 
@@ -49,6 +50,7 @@ export const create = (db: Db) =>
     article: {
       "": {
         get: getArticle(db),
+        delete: deleteArticle(db),
       },
       editor: {
         get: getEditor(db),

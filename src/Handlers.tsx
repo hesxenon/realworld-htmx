@@ -117,6 +117,19 @@ export const getArticle = flow(
   }),
 );
 
+export const deleteArticle = flow(
+  createSecuredContext(),
+  query(z.object({ id: z.string() })),
+  handle(({ query, withDb, user }): Response => {
+    const article = withDb(Db.getArticle(query));
+    if (article == null || user.id !== article.authorId) {
+      return notFound();
+    }
+    withDb(Db.deleteArticle(query));
+    return redirect(["GET /"]);
+  }),
+);
+
 export const getProfile = flow(
   createRootContext(),
   query(z.object({ id: z.string() })),

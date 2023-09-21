@@ -670,3 +670,7 @@ export const upsertArticle = ({
       return pipe(db, getArticle(upserted));
     }),
   );
+
+export const deleteArticle = (article: Pick<Article, "id">) =>
+  withDb((db) => db.delete(articles).where(eq(articles.id, article.id)).run());
+

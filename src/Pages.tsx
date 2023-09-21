@@ -4,7 +4,12 @@
 
 import * as DateFns from "date-fns/fp";
 import * as Db from "./Db";
-import { Comment, FormErrors, Link } from "./Components";
+import {
+  ButtonThatIsActuallyALink,
+  Comment,
+  FormErrors,
+  Link,
+} from "./Components";
 import { url } from "./Routes";
 import { marked } from "marked";
 import { fromHtml } from "htmx-tsx";
@@ -62,10 +67,8 @@ export function ArticleDetail({
       </button>
       {currentUser?.id !== article.author.id ? undefined : (
         <>
-          <button
+          <ButtonThatIsActuallyALink
             hx-get={url(["GET /article/editor", { id: article.id }])}
-            hx-target="closest .article-page"
-            hx-swap="outerHTML"
             class="btn btn-sm btn-outline-secondary"
             style={{
               marginRight: "3px",
@@ -78,8 +81,11 @@ export function ArticleDetail({
               }}
             ></i>
             Edit Article
-          </button>
-          <button class="btn btn-sm btn-outline-danger">
+          </ButtonThatIsActuallyALink>
+          <button
+            hx-delete={url(["DELETE /article", { id: article.id }])}
+            class="btn btn-sm btn-outline-danger"
+          >
             <i
               class="ion-trash-a"
               style={{
@@ -220,15 +226,13 @@ export function Profile({
                 Follow {profile.username}
               </button>
               {profile.id !== currentUser?.id ? undefined : (
-                <button
+                <ButtonThatIsActuallyALink
                   hx-get={url(["GET /profile/settings"])}
-                  hx-target="closest .profile-page"
-                  hx-swap="outerHTML"
                   class="btn btn-sm btn-outline-secondary action-btn"
                 >
                   <i class="ion-gear-a"></i>
                   Edit Profile Settings
-                </button>
+                </ButtonThatIsActuallyALink>
               )}
             </div>
           </div>

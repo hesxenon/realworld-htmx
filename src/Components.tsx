@@ -4,17 +4,12 @@ import { Url, url } from "./Routes";
 
 const formatDate = DateFns.format("MMMM do");
 
-export function FormErrors({
-  errors,
-}: {
-  errors: string[];
-}) {
+export function FormErrors({ errors }: { errors: string[] }) {
   return (
     <ul class="error-messages">
-      {errors
-        .map((error) => (
-          <li>{error}</li>
-        ))}
+      {errors.map((error) => (
+        <li>{error}</li>
+      ))}
     </ul>
   );
 }
@@ -27,11 +22,19 @@ export function Avatar({ user }: { user: User }) {
   );
 }
 
-export function Link(props: JSX.Element & { class?: string; url: Url }) {
+export function Link(props: JSX.Element & { url: Url }) {
   return (
     <a href={url(props.url)} hx-target="main#app-root">
       {props.children}
     </a>
+  );
+}
+
+export function ButtonThatIsActuallyALink({ children }: JSX.Element) {
+  return (
+    <button hx-target="main#app-root" hx-push-url="true">
+      {children}
+    </button>
   );
 }
 

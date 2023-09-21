@@ -80,7 +80,27 @@ export function Shell({
         ></script>
         <script src="https://unpkg.com/hyperscript.org@0.9.11" defer></script>
       </head>
-      <body hx-boost="true">
+      <body
+        hx-boost="true"
+        class="hx-indicator"
+        _="
+        on htmx:beforeRequest add .htmx-request to <.htmx-indicator/> in me end
+        on htmx:afterRequest remove .htmx-request from <.htmx-indicator/> in me end"
+      >
+        <div
+          class="htmx-indicator"
+          style={{
+            position: "fixed",
+            zIndex: "999",
+            top: "0",
+            left: "0",
+            height: "100vh",
+            width: "100vw",
+            pointerEvents: "none",
+            backdropFilter: "blur(2px)",
+            background: "rgba(255, 255, 255, 0.5)",
+          }}
+        ></div>
         <nav class="navbar navbar-light">
           <div class="container">
             <Link class="navbar-brand" url={["GET /"]}>

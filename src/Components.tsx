@@ -228,17 +228,16 @@ export function Feed({
       {articles.map((article) => (
         <ArticlePreview article={article} />
       ))}
-      <ul class="pagination" style={{ display: "flex", gap: "3px" }}>
+      <ul class="pagination">
         {Array.from({
           length: Math.ceil(articles.length / size),
         }).map((_, index) => (
-          <li class="page-item active">
+          <li class={`page-item ${index === page ? "active" : ""}`}>
             <a
               hx-get={url(getPaginationUrl(index))}
               hx-target="closest article"
               hx-swap="outerHTML"
               class={`page-link ${index !== page ? "" : "active"}`}
-              href=""
             >
               {index + 1}
             </a>

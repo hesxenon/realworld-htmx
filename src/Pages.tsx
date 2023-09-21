@@ -206,7 +206,7 @@ export function Profile({
   profile,
   currentUser,
 }: {
-  profile: Db.User;
+  profile: Db.Profile;
   currentUser: Db.User | undefined;
 }) {
   return (
@@ -220,10 +220,12 @@ export function Profile({
               {profile.bio == null ? undefined : <p>{profile.bio}</p>}
               <button
                 hx-post={url(["POST /profile/follow", { id: profile.id }])}
+                hx-target="find .counter"
                 class="btn btn-sm btn-outline-secondary action-btn"
               >
                 <i class="ion-plus-round"></i>
-                Follow {profile.username}
+                Follow {profile.username} (
+                <span class="counter">{profile.followers.length}</span>)
               </button>
               {profile.id !== currentUser?.id ? undefined : (
                 <ButtonThatIsActuallyALink

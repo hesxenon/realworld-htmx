@@ -415,10 +415,27 @@ export type ArticlePreview = ReturnType<
   ReturnType<typeof getArticlePreviews>
 >[number];
 
-export const getUserById = (user: Pick<User, "id">) =>
+export const getProfile = (user: Pick<User, "id">) =>
   withDb((db) =>
-    db.select().from(users).where(eq(users.id, user.id)).all().at(0),
+    db.transaction((db) => {
+      const found = db.query.users
+        .findMany({
+          where: eq(users.id, user.id),
+          limit: 1,
+        })
+        .sync()
+        .at(0);
+
+      if (found == null) {
+        return undefined;
+      }
+
+      const followers = pipe(db, getFollowers(user));
+
+      return Object.assign(found, { followers });
+    }),
   );
+export type Profile = NonNullable<ReturnType<ReturnType<typeof getProfile>>>;
 
 export const getFollowers = (user: Pick<User, "id">) =>
   withDb((db) =>
@@ -586,7 +603,7 @@ export const addUser = (
     ),
   );
 
-export const getProfile = (user: Pick<User, "id">) =>
+export const getUserById = (user: Pick<User, "id">) =>
   withDb((db) =>
     db.select().from(users).where(eq(users.id, user.id)).all().at(0),
   );
@@ -673,4 +690,3 @@ export const upsertArticle = ({
 
 export const deleteArticle = (article: Pick<Article, "id">) =>
   withDb((db) => db.delete(articles).where(eq(articles.id, article.id)).run());
-

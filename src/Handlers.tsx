@@ -26,6 +26,7 @@ const {
   Validate: { query, body },
   Middleware: { bodyParser },
   Context: { withCookies },
+  context,
   handle,
 } = A.HTTP;
 
@@ -222,6 +223,24 @@ export const login = flow(
         },
       }),
       setCookie("jwt", jwt, { httpOnly: true }),
+    );
+  }),
+);
+
+export const logout = pipe(
+  context(),
+  withCookies(),
+  handle(({ setCookie }) => {
+    return pipe(
+      new Response(undefined, {
+        headers: {
+          "hx-redirect": "/",
+        },
+      }),
+      setCookie("jwt", "", {
+        httpOnly: true,
+        maxAge: 0,
+      }),
     );
   }),
 );

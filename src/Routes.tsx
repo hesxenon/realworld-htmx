@@ -18,6 +18,7 @@ import {
   getFavoritedArticles,
   getEditor,
   upsertArticle,
+  logout,
 } from "./Handlers";
 import { Db } from "./Db";
 
@@ -37,6 +38,9 @@ export const create = (db: Db) =>
     login: {
       get: getLogin(db),
       post: login(db),
+    },
+    logout: {
+      delete: logout,
     },
     register: {
       get: getRegister(db),

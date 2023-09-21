@@ -550,7 +550,7 @@ export function Settings({
             </form>
             <hr />
             <button
-              hx-post={url(["POST /logout"])}
+              hx-delete={url(["DELETE /logout"])}
               class="btn btn-outline-danger"
             >
               Or click here to logout.

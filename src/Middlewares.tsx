@@ -41,28 +41,29 @@ export const tryGetUser = <Current extends BaseContext>() =>
     );
   });
 
-export const createRootContext = () => flow(
-  createBaseContext,
-  tryGetUser(),
-  A.Context.extend(({ request, user }) => {
-    const url = new URL(request.url);
-    const isHxRequest = request.headers.get("HX-Request") != null;
-    const currentUrl = request.headers.get("HX-Current-URL") ?? request.url;
-    return {
-      url,
-      isHxRequest,
-      currentUrl,
-      Shell: ({ children }: JSX.Element) =>
-        isHxRequest ? (
-          <>{children}</>
-        ) : (
-          <Shell currentUrl={currentUrl} user={user}>
-            {children}
-          </Shell>
-        ),
-    };
-  }),
-);
+export const createRootContext = () =>
+  flow(
+    createBaseContext,
+    tryGetUser(),
+    A.Context.extend(({ request, user }) => {
+      const url = new URL(request.url);
+      const isHxRequest = request.headers.get("HX-Request") != null;
+      const currentUrl = request.headers.get("HX-Current-URL") ?? request.url;
+      return {
+        url,
+        isHxRequest,
+        currentUrl,
+        Shell: ({ children }: JSX.Element) =>
+          isHxRequest ? (
+            <>{children}</>
+          ) : (
+            <Shell currentUrl={currentUrl} user={user}>
+              {children}
+            </Shell>
+          ),
+      };
+    }),
+  );
 
 export const createSecuredContext = ({
   redirectToLogin = true,
@@ -78,7 +79,7 @@ export const createSecuredContext = ({
             ? new Response(undefined, {
                 status: 302,
                 headers: {
-                  "hx-location": "/login",
+                  location: "/login",
                 },
               })
             : new Response("unauthorized", {
